@@ -4,11 +4,30 @@ from datetime import datetime
 import json
 os.system("cls")
 
-
+#Constants
 FILE_NAME = "tasks.json"
+FORMAT_DATE = datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M')
 status_list = ["To do", "In-Progress", "Completed"]
-#Initialitation
-#save tasks
+
+#verifies the input is a valid integer
+def get_int(prompt_valid):
+    while True:
+        try:
+            return int(input(prompt_valid))
+        except ValueError:
+            print("Please input a valid number")
+
+#load tasks
+def load_tasks():
+    if not os.path.exists(FILE_NAME):
+        return []
+    try:
+        with open(FILE_NAME, "r") as file:
+            return json.load(file)
+    except json.JSONDecodeError:
+        return []
+
+#save the task once made the changes
 def save_tasks(tasks):
     with open(FILE_NAME, "w") as file:
         json.dump(tasks, file, indent=4)
@@ -26,26 +45,16 @@ def _create_id():
         
     return new_id
             
-#load tasks
-def load_tasks():
-    if not os.path.exists(FILE_NAME):
-        return []
-    try:
-        with open(FILE_NAME, "r") as file:
-            return json.load(file)
-    except json.JSONDecodeError:
-        return []
-
 #Create new task
 def create_task():
     tasks = load_tasks()
     new_task = {
                 "id" : _create_id(),
-                "Title": input("Ingresa el titulo de tu tarea: \n"),
-                "description" : input("Ingresa una descripcion para tu nueva tarea:\n"),
+                "Title": input("Input the title for the new task: \n"),
+                "description" : input("Input a description for the new task:\n"),
                 "status" : status_list[0],
-                "created_At" : datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M'),
-                "updated_At" : datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M')
+                "created_At" : FORMAT_DATE,
+                "updated_At" : FORMAT_DATE
         }
     tasks.append(new_task)
     save_tasks(tasks)
@@ -57,44 +66,41 @@ def print_tasks():
     for t in tasks:
         print(f"{t}\n")
 
+#update tasks
 def update_task():
     upd_id = int(input("Ingresa el id de la tarea que quieres cambiar: \n"))
     tasks = load_tasks()
     
     for task in tasks:
         if upd_id == task["id"]:
-            task["Title"] = input("Ingresa tu nuevo titulo: \n")
-            task["description"] = input("Ingresa tu nueva descripcion: \n")
-            task["updated_At"] = datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M')
+            task["Title"] = input("Input the new title: \n")
+            task["description"] = input("Input the new description: \n")
+            task["updated_At"] = FORMAT_DATE
             save_tasks(tasks)
-            print("Tarea actualizada correctamente!\n")
+            print("Task updates succesfully!\n")
             break
     else:
-        print("No se encontro el id ingresado. Sin cambios!\n")
-                
+        print("ID not found. Changes not made!\n")
+             
+#change progress of the task
 def change_progress():
     tasks = load_tasks()
-    while True:
-        try:
-            changing_id = int(input("Ingresa el id de la tarea a cambiar: \n"))
-            progress_num = int(input("ingresa un valor para el cambio de progreso: \n To do = 0 \n In-progress = 1 \n Completed = 2 \n"))
-            break
-        except ValueError:
-            print("Ingresa un valor correcto para el id")
-            
-    for t in tasks:
-        if changing_id == t["id"]:
-            if progress_num >= 0 and progress_num <= 2:
-                t["status"] = status_list[progress_num]
-                break
-            else:
-                print("No existe un valor ese progreso. Sin cambios hechos")
-                break
+    #ask an int and verifies it is
+    changing_id = get_int("Input the task to modify\n")
+    task = next((t for t in tasks if t["id"] == changing_id), None)
+    
+    if not task:
+        print("No task was found with the ID you entered")
+        return
+    
+    progress_num = get_int("Ingresa un numero para cambiar el progreso de la tarea:\n To do = 0\n In-Progress = 1\n Completed = 2\n")
+    
+    if 0 <= progress_num <= 2:
+        task["status"] = status_list[progress_num]
+        save_tasks(tasks)
+        print("Progress updated sucessfully")
     else:
-        print("No existe es id. Sin cambios hechos")
-            
-    save_tasks(tasks)
-                    
+        print("Progress value not valid. Changes no made")
             
       
 #Command executions
