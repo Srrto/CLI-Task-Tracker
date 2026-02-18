@@ -34,16 +34,8 @@ def save_tasks(tasks):
 
 #create id
 def _create_id():
-    tasks = load_tasks()
-    existing_ids = sorted(task["id"] for task in tasks)
-    new_id = 1
-    for task_id in existing_ids:
-        if task_id == new_id:
-            new_id += 1
-        else:
-            break
-        
-    return new_id
+    tasks = load_tasks()   
+    return max(t["id"] for t in tasks) + 1
             
 #Create new task
 def create_task():
@@ -59,6 +51,23 @@ def create_task():
     tasks.append(new_task)
     save_tasks(tasks)
     print("Task saved")
+
+#delete task
+def delete_task():
+    #we got the id to delete and we verify it is a valid int
+    delete_id = get_int("type the id of the task to delete: \n")
+    tasks = load_tasks()
+    #we iterate tasks and compare with delete_id, if found returns True, not the value
+    task = any((t for t in tasks if t["id"] == delete_id))
+    
+    #If the value was not found, stops the function
+    if not task:
+        print("No existe ninguna tarea con ese ID.\n")
+        return
+    
+    #if the value was found, we create a new list without the task to delete
+    new_tasks = [t for t in tasks if t["id"] != delete_id]
+    save_tasks(new_tasks)
     
 #print tasks
 def print_tasks():
@@ -101,8 +110,17 @@ def change_progress():
         print("Progress updated sucessfully")
     else:
         print("Progress value not valid. Changes no made")
-            
+     
+#List all tasks
+def list_tasks():
+    tasks = load_tasks()
+    if not tasks:
+        print("Not tasks has been added. Nothing to show")
+        return
+    
+    print(f"")
+    
       
 #Command executions
 
-change_progress()
+create_task()
