@@ -2,12 +2,20 @@ import os
 from datetime import date
 from datetime import datetime
 import json
+from enum import Enum
 os.system("cls")
 
 #Constants
 FILE_NAME = "tasks.json"
 FORMAT_DATE = datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M')
 status_list = ["To do", "In-Progress", "Completed"]
+
+class state(Enum):
+    ALL = 0
+    TODO = 1
+    IN_PROGRESS = 2
+    COMPLETED = 3
+
 
 #verifies the input is a valid integer
 def get_int(prompt_valid):
@@ -76,7 +84,7 @@ def print_tasks():
         print(f"{t}\n")
 
 #update tasks
-def update_task():
+def modify_task():
     upd_id = int(input("Ingresa el id de la tarea que quieres cambiar: \n"))
     tasks = load_tasks()
     
@@ -92,7 +100,7 @@ def update_task():
         print("ID not found. Changes not made!\n")
              
 #change progress of the task
-def change_progress():
+def update_progress():
     tasks = load_tasks()
     #ask an int and verifies it is
     changing_id = get_int("Input the task to modify\n")
@@ -106,21 +114,86 @@ def change_progress():
     
     if 0 <= progress_num <= 2:
         task["status"] = status_list[progress_num]
+        task["updated_At"] = FORMAT_DATE
         save_tasks(tasks)
         print("Progress updated sucessfully")
     else:
         print("Progress value not valid. Changes no made")
      
-#List all tasks
-def list_tasks():
+#Filter all tasks
+def filter_tasks(status_task: Enum):
     tasks = load_tasks()
-    if not tasks:
-        print("Not tasks has been added. Nothing to show")
+    filtered_task = []
+    
+    if status_task == state.ALL:
+        return tasks
+    if status_task == state.TODO:
+        filtered_task = [t for t in tasks if t["status"] == status_list[0]]
+        return filtered_task
+    if status_task == state.IN_PROGRESS:
+        filtered_task = [t for t in tasks if t["status"] == status_list[1]]
+        return filtered_task
+    if status_task == state.COMPLETED:
+        filtered_task = [t for t in tasks if t["status"] == status_list[2]]
+        return filtered_task
+    
+    return filtered_task
+
+#Show tasks
+def show_tasks(state):
+    filtered_tasks = filter_tasks(state)
+    if not filtered_tasks:
+        print("The list is empty. Nothing to show")
         return
     
-    print(f"")
+    print(f"{"ID":<5} {"Title":<30} {"Status":<20}")
+    print("_" * 60, "\n" )
     
-      
+    for tf in filtered_tasks:
+        print(f"{tf["id"]:<5} {tf["Title"]:<30} {tf["status"]:<20} \n")
+    
+#middle-function to handle fuction with parameter
+
+#dict of functions
+actions_tasks = {
+    "1": create_task,
+    "2": delete_task,
+    "3": modify_task,
+    "4": update_progress,
+    "5": show_tasks(0),
+    "6": show_tasks(1),
+    "7": show_tasks(2),
+    "8": show_tasks(3),
+}    
+    
+#Menu interactivo
+def main_menu():
+    while True:
+        print("Welcome to my CLI Task Tracker\n")
+        print("_" * 60, "\n")
+        print("1. Create a new task \n")
+        print("2. Delete task\n")
+        print("3. Modify task\n")
+        print("4. Update progress of a task\n")
+        print("5. Show all tasks\n")
+        print("6. Show al 'To do' tasks\n")
+        print("7. Show all 'In progress' tasks\n")
+        print("8. Show all 'Completed' tasks\n")
+        print("9. Close\n")
+        
+        option = input("Type the option you want to do: ")
+        if option == "9":
+            print("Exiting...")
+            break
+        
+        selected_action = actions_tasks.get(option)
+
+        if selected_action:
+            selected_action()
+        else:
+            "Option not valid. Try again"
+        
+        
+        
 #Command executions
 
-create_task()
