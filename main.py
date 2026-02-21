@@ -60,7 +60,10 @@ def save_tasks(tasks):
 
 #create id
 def _create_id():
-    tasks = load_tasks()   
+    tasks = load_tasks()
+    if not tasks:
+        return 1
+    
     return max(t["id"] for t in tasks) + 1
             
 #Create new task
