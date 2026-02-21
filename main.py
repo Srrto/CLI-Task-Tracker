@@ -3,7 +3,7 @@ from datetime import date
 from datetime import datetime
 import json
 from enum import Enum
-os.system("cls")
+
 
 #Constants
 FILE_NAME = "tasks.json"
@@ -11,20 +11,38 @@ FORMAT_DATE = datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M')
 status_list = ["To do", "In-Progress", "Completed"]
 
 class state(Enum):
-    ALL = 0
-    TODO = 1
-    IN_PROGRESS = 2
-    COMPLETED = 3
+    TODO = 0
+    IN_PROGRESS = 1
+    COMPLETED = 2
+    ALL = 3
 
+#clear the terminal
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 #verifies the input is a valid integer
-def get_int(prompt_valid):
+def get_int(prompt_valid, min_val = None, max_val = None):
+    
     while True:
+        
+        #valids if it`s an int
         try:
-            return int(input(prompt_valid))
+            value =  int(input(prompt_valid))
+        
+            #checks if it`s min and max val are not None
+            if min_val is not None and max_val is not None:
+                
+                #verify the int is in range
+                if not (min_val <= value <= max_val):
+                    print(f"The number must be between or be {min_val} and/or {max_val} \n")
+                    continue
+                
+            clear_screen()
+            return value
+        
         except ValueError:
-            print("Please input a valid number")
-
+            print("Please input a valid number\n")
+            
 #load tasks
 def load_tasks():
     if not os.path.exists(FILE_NAME):
@@ -47,6 +65,7 @@ def _create_id():
             
 #Create new task
 def create_task():
+    clear_screen()
     tasks = load_tasks()
     new_task = {
                 "id" : _create_id(),
@@ -62,9 +81,12 @@ def create_task():
 
 #delete task
 def delete_task():
+    #show the tasks to know the valid options to delete
+    show_tasks(3)
     #we got the id to delete and we verify it is a valid int
     delete_id = get_int("type the id of the task to delete: \n")
     tasks = load_tasks()
+    
     #we iterate tasks and compare with delete_id, if found returns True, not the value
     task = any((t for t in tasks if t["id"] == delete_id))
     
@@ -73,9 +95,17 @@ def delete_task():
         print("No existe ninguna tarea con ese ID.\n")
         return
     
-    #if the value was found, we create a new list without the task to delete
-    new_tasks = [t for t in tasks if t["id"] != delete_id]
-    save_tasks(new_tasks)
+    sure = get_int("Are you sure you want to delete the task?\n"
+                   "1. Yes, delete it\n"
+                   "2. No, i changed my mind\n", 1, 2)
+    
+    if sure == 1:
+        #if the value was found, we create a new list without the task to delete
+        new_tasks = [t for t in tasks if t["id"] != delete_id]
+        save_tasks(new_tasks)
+        print("¡Task deleted!")
+    else:
+        print("changes was no made")
     
 #print tasks
 def print_tasks():
@@ -85,7 +115,8 @@ def print_tasks():
 
 #update tasks
 def modify_task():
-    upd_id = int(input("Ingresa el id de la tarea que quieres cambiar: \n"))
+    show_tasks(3)
+    upd_id = int(input("input the id the task you want to change: \n"))
     tasks = load_tasks()
     
     for task in tasks:
@@ -94,7 +125,7 @@ def modify_task():
             task["description"] = input("Input the new description: \n")
             task["updated_At"] = FORMAT_DATE
             save_tasks(tasks)
-            print("Task updates succesfully!\n")
+            print("Task updated succesfully!\n")
             break
     else:
         print("ID not found. Changes not made!\n")
@@ -102,6 +133,7 @@ def modify_task():
 #change progress of the task
 def update_progress():
     tasks = load_tasks()
+    show_tasks(3)
     #ask an int and verifies it is
     changing_id = get_int("Input the task to modify\n")
     task = next((t for t in tasks if t["id"] == changing_id), None)
@@ -121,26 +153,19 @@ def update_progress():
         print("Progress value not valid. Changes no made")
      
 #Filter all tasks
-def filter_tasks(status_task: Enum):
+def filter_tasks(status_task: int):
     tasks = load_tasks()
-    filtered_task = []
+    state_value = state(status_task)
     
-    if status_task == state.ALL:
+    if state_value == state.ALL:
         return tasks
-    if status_task == state.TODO:
-        filtered_task = [t for t in tasks if t["status"] == status_list[0]]
-        return filtered_task
-    if status_task == state.IN_PROGRESS:
-        filtered_task = [t for t in tasks if t["status"] == status_list[1]]
-        return filtered_task
-    if status_task == state.COMPLETED:
-        filtered_task = [t for t in tasks if t["status"] == status_list[2]]
-        return filtered_task
+    else:
+        filtered_list = [t for t in tasks if t["status"] == status_list[state_value.value]]
+        return filtered_list
     
-    return filtered_task
-
 #Show tasks
 def show_tasks(state):
+    
     filtered_tasks = filter_tasks(state)
     if not filtered_tasks:
         print("The list is empty. Nothing to show")
@@ -153,6 +178,15 @@ def show_tasks(state):
         print(f"{tf["id"]:<5} {tf["Title"]:<30} {tf["status"]:<20} \n")
     
 #middle-function to handle fuction with parameter
+def show_tasks_handler():
+    task_num = get_int(
+        "type a number to show filtered tasks\n"
+        "0. Show 'To-do' tasks\n"
+        "1. Show 'In-progress tasks'\n"
+        "2. Show 'Completed tasks'\n"
+        "3. Show all tasks\n")
+    
+    show_tasks(task_num)
 
 #dict of functions
 actions_tasks = {
@@ -160,40 +194,36 @@ actions_tasks = {
     "2": delete_task,
     "3": modify_task,
     "4": update_progress,
-    "5": show_tasks(0),
-    "6": show_tasks(1),
-    "7": show_tasks(2),
-    "8": show_tasks(3),
+    "5": show_tasks_handler
 }    
     
 #Menu interactivo
 def main_menu():
     while True:
-        print("Welcome to my CLI Task Tracker\n")
+        print("_" * 60, "\n")
+        print("Welcome to my CLI Task Tracker")
         print("_" * 60, "\n")
         print("1. Create a new task \n")
         print("2. Delete task\n")
         print("3. Modify task\n")
         print("4. Update progress of a task\n")
-        print("5. Show all tasks\n")
-        print("6. Show al 'To do' tasks\n")
-        print("7. Show all 'In progress' tasks\n")
-        print("8. Show all 'Completed' tasks\n")
+        print("5. Show tasks\n")
         print("9. Close\n")
         
-        option = input("Type the option you want to do: ")
-        if option == "9":
-            print("Exiting...")
+        option = get_int("type an option: ")
+        if option == 9:
+            print("Exiting...\n")
             break
         
-        selected_action = actions_tasks.get(option)
+        selected_action = actions_tasks.get(str(option))
 
         if selected_action:
             selected_action()
         else:
-            "Option not valid. Try again"
+            "Option not valid. Try again\n"
         
         
         
 #Command executions
 
+main_menu()
