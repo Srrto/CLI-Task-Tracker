@@ -5,6 +5,8 @@ import json
 from enum import Enum
 
 
+
+
 #Constants
 FILE_NAME = "tasks.json"
 FORMAT_DATE = datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M')
@@ -15,7 +17,6 @@ class TaskManager:
     #Constructor
     def __init__(self):
         self.tasks = self.load_tasks()
-    
     
     #clear the terminal
     def clear_screen(self):
@@ -89,10 +90,9 @@ class TaskManager:
         self.show_tasks(3)
         #we got the id to delete and we verify it is a valid int
         delete_id = self.get_int("type the id of the task to delete: \n")
-        tasks = self.load_tasks()
         
         #we iterate tasks and compare with delete_id, if found returns True, not the value
-        task = any((t for t in tasks if t["id"] == delete_id))
+        task = any((t for t in self.tasks if t["id"] == delete_id))
         
         #If the value was not found, stops the function
         if not task:
@@ -105,7 +105,7 @@ class TaskManager:
         
         if sure == 1:
             #if the value was found, we create a new list without the task to delete
-            self.tasks = [t for t in tasks if t["id"] != delete_id]
+            self.tasks = [t for t in self.tasks if t["id"] != delete_id]
             self.save_tasks()
             print("¡Task deleted!")
         else:
@@ -113,17 +113,15 @@ class TaskManager:
 
     #print tasks
     def print_tasks(self):
-        tasks = self.load_tasks()
-        for t in tasks:
+        for t in self.tasks:
             print(f"{t}\n")
 
     #update tasks
     def modify_task(self):
         self.show_tasks(3)
         upd_id = int(input("input the id the task you want to change: \n"))
-        tasks = self.load_tasks()
         
-        for task in tasks:
+        for task in self.tasks:
             if upd_id == task["id"]:
                 task["Title"] = input("Input the new title: \n")
                 task["description"] = input("Input the new description: \n")
@@ -136,11 +134,10 @@ class TaskManager:
 
     #change progress of the task
     def update_progress(self):
-        tasks = self.load_tasks()
         self.show_tasks(3)
         #ask an int and verifies it is
         changing_id = self.get_int("Input the task to modify\n")
-        task = next((t for t in tasks if t["id"] == changing_id), None)
+        task = next((t for t in self.tasks if t["id"] == changing_id), None)
         
         if not task:
             print("No task was found with the ID you entered")
@@ -158,13 +155,12 @@ class TaskManager:
 
     #Filter all tasks
     def filter_tasks(self, status_task):
-        tasks = self.load_tasks()
         state_value = state(status_task)
         
         if state_value == state.ALL:
-            return tasks
+            return self.tasks
         else:
-            filtered_list = [t for t in tasks if t["status"] == status_list[state_value.value]]
+            filtered_list = [t for t in self.tasks if t["status"] == status_list[state_value.value]]
             return filtered_list
 
     #Show tasks
@@ -192,30 +188,7 @@ class TaskManager:
         
         self.show_tasks(task_num)
         
-    #Interactive Menu
-    def main_menu(self):
-        while True:
-            print("_" * 60, "\n")
-            print("Welcome to my CLI Task Tracker")
-            print("_" * 60, "\n")
-            print("1. Create a new task \n")
-            print("2. Delete task\n")
-            print("3. Modify task\n")
-            print("4. Update progress of a task\n")
-            print("5. Show tasks\n")
-            print("9. Close\n")
-            
-            option = self.get_int("type an option: ")
-            if option == 9:
-                print("Exiting...\n")
-                break
-            
-            selected_action = actions_tasks.get(str(option))
-
-            if selected_action:
-                selected_action()
-            else:
-                "Option not valid. Try again\n"
+    
 
 #list of values to filter list
 class state(Enum):
@@ -234,10 +207,34 @@ actions_tasks = {
     "4": manager.update_progress,
     "5": manager.show_tasks_handler
 }    
-    
+
+#Interactive Menu
+def main_menu():
+    while True:
+        print("_" * 60, "\n")
+        print("Welcome to my CLI Task Tracker")
+        print("_" * 60, "\n")
+        print("1. Create a new task \n")
+        print("2. Delete task\n")
+        print("3. Modify task\n")
+        print("4. Update progress of a task\n")
+        print("5. Show tasks\n")
+        print("9. Close\n")
+        
+        option = manager.get_int("type an option: ")
+        if option == 9:
+            print("Exiting...\n")
+            break
+        
+        selected_action = actions_tasks.get(str(option))
+
+        if selected_action:
+            selected_action()
+        else:
+            "Option not valid. Try again\n"
 
         
         
         
 #Command executions
-manager.main_menu()
+main_menu()
