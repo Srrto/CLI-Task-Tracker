@@ -3,79 +3,106 @@ from datetime import date
 from datetime import datetime
 import json
 from enum import Enum
+import argparse
+
+"""I need to learn and implement the arguments taken by terminal"""
 
 
+#clear the terminal
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
+#Validate input strings
+def get_string(prompt):
+    while True:
+        text_val = input(prompt).strip()
+        
+        if not text_val:
+            print("The text cannot be empty. Please type something\n")
+            continue
+        
+        return text_val
 
-
-#Constants
-FILE_NAME = "tasks.json"
-FORMAT_DATE = datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M')
-status_list = ["To do", "In-Progress", "Completed"]
+#verifies the input is a valid integer
+def get_int(prompt_valid, min_val = None, max_val = None):
+    
+    while True:
+        
+        #valids if it`s an int
+        try:
+            value =  int(input(prompt_valid))
+        
+            #checks if it`s min and max val are not None
+            if min_val is not None and max_val is not None:
+                
+                #verify the int is in range
+                if not (min_val <= value <= max_val):
+                    print(f"The number must be between or be {min_val} and/or {max_val} \n")
+                    continue
+                
+            clear_screen()
+            return value
+        
+        except ValueError:
+            print("Please input a valid number\n")
+    
+def parse_state(status):
+    try:
+        return state[status.upper()].value
+    except KeyError:
+        raise argparse.ArgumentTypeError("Invalid Status")
 
 #class to encapsulate functions to manipulate json
 class TaskManager:
+    #Constants
+    FILE_NAME = "tasks.json"
+    FORMAT_DATE = datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M')
+    STATUS = ["todo", "progress", "completed"]
+    
     #Constructor
     def __init__(self):
+        
         self.tasks = self.load_tasks()
-    
-    #clear the terminal
-    def clear_screen(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
+     
+    #functions
         
     #Load tasks
     def load_tasks(self):
-        if not os.path.exists(FILE_NAME):
+        if not os.path.exists(TaskManager.FILE_NAME):
             print("File not found. Creating a new one!")
             return []
         try:
-            with open(FILE_NAME, "r") as file:
+            with open(TaskManager.FILE_NAME, "r") as file:
                 return json.load(file)
         except json.JSONDecodeError:
             return []
         
     #Save the task once made the changes
     def save_tasks(self):
-        with open(FILE_NAME, "w") as file:
+        with open(TaskManager.FILE_NAME, "w") as file:
             json.dump(self.tasks, file, indent=4)
             
     #Create new task
-    def add_task(self):
-        self.clear_screen()
+    def add_task(self, title = None, description = None):
+        clear_screen()
+        
+        #validate if title was passed
+        if title == None and description == None:
+            title = get_string("Type the title for the task")
+            description = get_string("Type a description for the task")
+        
         new_task = {
                     "id" : self.__create_id(),
-                    "Title": input("Input the title for the new task: \n"),
-                    "description" : input("Input a description for the new task:\n"),
-                    "status" : status_list[0],
-                    "created_At" : FORMAT_DATE,
-                    "updated_At" : FORMAT_DATE
+                    "Title": title,
+                    "description" : description,
+                    "status" : TaskManager.STATUS[0],
+                    "created_At" : self.FORMAT_DATE,
+                    "updated_At" : self.FORMAT_DATE
             }
         self.tasks.append(new_task)
         self.save_tasks()
         print("Task saved")
         
-    #verifies the input is a valid integer
-    def get_int(self, prompt_valid, min_val = None, max_val = None):
-        
-        while True:
-            
-            #valids if it`s an int
-            try:
-                value =  int(input(prompt_valid))
-            
-                #checks if it`s min and max val are not None
-                if min_val is not None and max_val is not None:
-                    
-                    #verify the int is in range
-                    if not (min_val <= value <= max_val):
-                        print(f"The number must be between or be {min_val} and/or {max_val} \n")
-                        continue
-                    
-                self.clear_screen()
-                return value
-            
-            except ValueError:
-                print("Please input a valid number\n")
-    
     #create id
     def __create_id(self):
         tasks = self.load_tasks()
@@ -85,11 +112,13 @@ class TaskManager:
         return max(t["id"] for t in tasks) + 1
 
     #delete task
-    def delete_task(self):
-        #show the tasks to know the valid options to delete
-        self.show_tasks(3)
-        #we got the id to delete and we verify it is a valid int
-        delete_id = self.get_int("type the id of the task to delete: \n")
+    def delete_task(self, delete_id = None):
+        
+        if not delete_id:
+            #show the tasks to know the valid options to delete
+            self.show_tasks(3)
+            #we got the id to delete and we verify it is a valid int
+            delete_id = get_int("type the id of the task to delete: \n")
         
         #we iterate tasks and compare with delete_id, if found returns True, not the value
         task = any((t for t in self.tasks if t["id"] == delete_id))
@@ -99,7 +128,8 @@ class TaskManager:
             print("No existe ninguna tarea con ese ID.\n")
             return
         
-        sure = self.get_int("Are you sure you want to delete the task?\n"
+        
+        sure = get_int("Are you sure you want to delete the task?\n"
                     "1. Yes, delete it\n"
                     "2. No, i changed my mind\n", 1, 2)
         
@@ -117,15 +147,20 @@ class TaskManager:
             print(f"{t}\n")
 
     #update tasks
-    def modify_task(self):
-        self.show_tasks(3)
-        upd_id = int(input("input the id the task you want to change: \n"))
+    def modify_task(self, modify_id = None, title = None, description = None):
+        
+        #get title and description if not provided by terminal
+        if not title and not description and not modify_id:
+            self.show_tasks(3)
+            modify_id = get_int("Type the id of the task you want to modify\n")
+            title = get_string("Type the new title\n")
+            description = get_string("Type the new description\n")
         
         for task in self.tasks:
-            if upd_id == task["id"]:
-                task["Title"] = input("Input the new title: \n")
-                task["description"] = input("Input the new description: \n")
-                task["updated_At"] = FORMAT_DATE
+            if modify_id == task["id"]:
+                task["Title"] = title
+                task["description"] = description
+                task["updated_At"] = self.FORMAT_DATE
                 self.save_tasks()
                 print("Task updated succesfully!\n")
                 break
@@ -133,21 +168,26 @@ class TaskManager:
             print("ID not found. Changes not made!\n")
 
     #change progress of the task
-    def update_progress(self):
-        self.show_tasks(3)
-        #ask an int and verifies it is
-        changing_id = self.get_int("Input the task to modify\n")
-        task = next((t for t in self.tasks if t["id"] == changing_id), None)
+    def update_progress(self, updating_id = None, progress = None):
+        
+        if not updating_id:   
+            self.show_tasks(3)
+            #ask an int and verifies it is
+            updating_id = get_int("Input the task to modify\n")
+            
+        task = next((t for t in self.tasks if t["id"] == updating_id), None)
         
         if not task:
             print("No task was found with the ID you entered")
             return
         
-        progress_num = self.get_int("Ingresa un numero para cambiar el progreso de la tarea:\n To do = 0\n In-Progress = 1\n Completed = 2\n")
+        if progress is None:
+            progress = get_int("Ingresa un numero para cambiar el progreso de la tarea:\n To do = 0\n In-Progress = 1\n Completed = 2\n")
+            
         
-        if 0 <= progress_num <= 2:
-            task["status"] = status_list[progress_num]
-            task["updated_At"] = FORMAT_DATE
+        if 0 <= progress <= 2:
+            task["status"] = TaskManager.STATUS[progress]
+            task["updated_At"] = self.FORMAT_DATE
             self.save_tasks()
             print("Progress updated sucessfully")
         else:
@@ -160,7 +200,7 @@ class TaskManager:
         if state_value == state.ALL:
             return self.tasks
         else:
-            filtered_list = [t for t in self.tasks if t["status"] == status_list[state_value.value]]
+            filtered_list = [t for t in self.tasks if t["status"] == TaskManager.STATUS[state_value.value]]
             return filtered_list
 
     #Show tasks
@@ -171,15 +211,15 @@ class TaskManager:
             print("The list is empty. Nothing to show")
             return
         
-        print(f"{"ID":<5} {"Title":<30} {"Status":<20}")
+        print(f"{'ID':<5} {'Title':<30} {'Status':<20}")
         print("_" * 60, "\n" )
         
         for tf in filtered_tasks:
-            print(f"{tf["id"]:<5} {tf["Title"]:<30} {tf["status"]:<20} \n")
+            print(f"{tf['id']:<5} {tf['Title']:<30} {tf['status']:<20} \n")
 
     #middle-function to handle fuction with parameter
     def show_tasks_handler(self):
-        task_num = self.get_int(
+        task_num = get_int(
             "type a number to show filtered tasks\n"
             "0. Show 'To-do' tasks\n"
             "1. Show 'In-progress tasks'\n"
@@ -187,16 +227,15 @@ class TaskManager:
             "3. Show all tasks\n")
         
         self.show_tasks(task_num)
-        
-    
 
 #list of values to filter list
 class state(Enum):
     TODO = 0
-    IN_PROGRESS = 1
+    PROGRESS = 1
     COMPLETED = 2
     ALL = 3
 
+#towrite
 manager = TaskManager()
 
 #dict of functions
@@ -209,7 +248,7 @@ actions_tasks = {
 }    
 
 #Interactive Menu
-def main_menu():
+def interactive_menu():
     while True:
         print("_" * 60, "\n")
         print("Welcome to my CLI Task Tracker")
@@ -221,7 +260,7 @@ def main_menu():
         print("5. Show tasks\n")
         print("9. Close\n")
         
-        option = manager.get_int("type an option: ")
+        option = get_int("type an option: ")
         if option == 9:
             print("Exiting...\n")
             break
@@ -233,8 +272,60 @@ def main_menu():
         else:
             "Option not valid. Try again\n"
 
+def main():
+    parser = argparse.ArgumentParser(description="CLI Task Tracker")
+    subparsers = parser.add_subparsers(dest="command")
+    
+    #add task by terminal
+    def add_task_command(args):
+        manager.add_task(args.title, args.description)
+
+    add_parser = subparsers.add_parser("add")
+    add_parser.add_argument("title")
+    add_parser.add_argument("description")
+    add_parser.set_defaults(function = add_task_command)
+    
+    #delete task by terminal
+    def delete_command(args):
+        manager.delete_task(args.delete_id)
         
+    delete_parser = subparsers.add_parser("delete")
+    delete_parser.add_argument("delete_id", type=int)
+    delete_parser.set_defaults(function=delete_command)
+    
+    #print tasks by terminal
+    def show_tasks_command(args):
+        manager.show_tasks(args.filter)
         
+    show_tasks_parser = subparsers.add_parser("show")
+    show_tasks_parser.add_argument("filter", type=int)
+    show_tasks_parser.set_defaults(function=show_tasks_command)
+    
+    #modify task by terminal
+    def modify_task_command(args):
+        manager.modify_task(args.modify_id, args.new_title, args.new_description)
+    
+    modify_task_parser = subparsers.add_parser("modify")
+    modify_task_parser.add_argument("modify_id", type=int)
+    modify_task_parser.add_argument("new_title", type=str)
+    modify_task_parser.add_argument("new_description", type=str)
+    modify_task_parser.set_defaults(function=modify_task_command)
+    
+    def update_task_command(args):
+        manager.update_progress(args.id, parse_state(args.progress))
+
+    update_task_parse = subparsers.add_parser("update")
+    update_task_parse.add_argument("id", type=int)
+    update_task_parse.add_argument("progress", type=str, choices=TaskManager.STATUS)
+    update_task_parse.set_defaults(function=update_task_command)
+    
+     
+    
+    args = parser.parse_args()
+    if hasattr(args, "function"):
+        args.function(args)
+    else:
+        parser.print_help()
         
-#Command executions
-main_menu()
+if __name__ == "__main__":
+    main()
