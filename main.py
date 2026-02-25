@@ -5,7 +5,7 @@ import json
 from enum import Enum
 import argparse
 
-"""I need to learn and implement the arguments taken by terminal"""
+"""fix showing tasks, it gives an error when typing outside of State(Enum)"""
 
 
 #clear the terminal
@@ -46,9 +46,9 @@ def get_int(prompt_valid, min_val = None, max_val = None):
         except ValueError:
             print("Please input a valid number\n")
     
-def parse_state(status):
+def parse_state(status: str) -> State:
     try:
-        return state[status.upper()].value
+        return State(status.lower())
     except KeyError:
         raise argparse.ArgumentTypeError("Invalid Status")
 
@@ -57,7 +57,6 @@ class TaskManager:
     #Constants
     FILE_NAME = "tasks.json"
     FORMAT_DATE = datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M')
-    STATUS = ["todo", "progress", "completed"]
     
     #Constructor
     def __init__(self):
@@ -95,7 +94,7 @@ class TaskManager:
                     "id" : self.__create_id(),
                     "Title": title,
                     "description" : description,
-                    "status" : TaskManager.STATUS[0],
+                    "status" : State.TODO,
                     "created_At" : self.FORMAT_DATE,
                     "updated_At" : self.FORMAT_DATE
             }
@@ -116,7 +115,7 @@ class TaskManager:
         
         if not delete_id:
             #show the tasks to know the valid options to delete
-            self.show_tasks(3)
+            self.show_tasks(State.ALL)
             #we got the id to delete and we verify it is a valid int
             delete_id = get_int("type the id of the task to delete: \n")
         
@@ -151,7 +150,7 @@ class TaskManager:
         
         #get title and description if not provided by terminal
         if not title and not description and not modify_id:
-            self.show_tasks(3)
+            self.show_tasks(State.ALL)
             modify_id = get_int("Type the id of the task you want to modify\n")
             title = get_string("Type the new title\n")
             description = get_string("Type the new description\n")
@@ -168,45 +167,44 @@ class TaskManager:
             print("ID not found. Changes not made!\n")
 
     #change progress of the task
-    def update_progress(self, updating_id = None, progress = None):
+    def update_progress(self, updating_id: int, progress: State):
         
         if not updating_id:   
-            self.show_tasks(3)
+            self.show_tasks(State.ALL)
+            
             #ask an int and verifies it is
             updating_id = get_int("Input the task to modify\n")
             
         task = next((t for t in self.tasks if t["id"] == updating_id), None)
         
+        #validate if there is a task with a valid updating_id
         if not task:
             print("No task was found with the ID you entered")
             return
         
         if progress is None:
-            progress = get_int("Ingresa un numero para cambiar el progreso de la tarea:\n To do = 0\n In-Progress = 1\n Completed = 2\n")
+            progress = get_int("Type the status of the task:\n todo\n inprogress\n completed\n")
             
+        task["status"] = progress.name.upper()
+        task["updated_At"] = TaskManager.FORMAT_DATE
+        self.save_tasks()
+        print("Progress updated sucessfully")
         
-        if 0 <= progress <= 2:
-            task["status"] = TaskManager.STATUS[progress]
-            task["updated_At"] = self.FORMAT_DATE
-            self.save_tasks()
-            print("Progress updated sucessfully")
-        else:
-            print("Progress value not valid. Changes no made")
 
     #Filter all tasks
-    def filter_tasks(self, status_task):
-        state_value = state(status_task)
+    def filter_tasks(self, status_task: State):
         
-        if state_value == state.ALL:
+        
+        if status_task == State.ALL:
             return self.tasks
         else:
-            filtered_list = [t for t in self.tasks if t["status"] == TaskManager.STATUS[state_value.value]]
+            filtered_list = [t for t in self.tasks if t["status"] == status_task.value.upper()]
             return filtered_list
 
     #Show tasks
-    def show_tasks(self, state):
+    def show_tasks(self, status: State):
         
-        filtered_tasks = self.filter_tasks(state)
+        filtered_tasks = self.filter_tasks(status)
         if not filtered_tasks:
             print("The list is empty. Nothing to show")
             return
@@ -219,21 +217,23 @@ class TaskManager:
 
     #middle-function to handle fuction with parameter
     def show_tasks_handler(self):
-        task_num = get_int(
-            "type a number to show filtered tasks\n"
-            "0. Show 'To-do' tasks\n"
-            "1. Show 'In-progress tasks'\n"
-            "2. Show 'Completed tasks'\n"
-            "3. Show all tasks\n")
+        task_state = get_string(
+            "type a word to show filtered tasks\n"
+            "todo: Show 'To-do' tasks\n"
+            "progress: Show 'In-progress tasks'\n"
+            "completed: Show 'Completed tasks'\n"
+            "all: Show all tasks\n")
         
-        self.show_tasks(task_num)
+        self.show_tasks(parse_state(task_state))
 
 #list of values to filter list
-class state(Enum):
-    TODO = 0
-    PROGRESS = 1
-    COMPLETED = 2
-    ALL = 3
+class State(Enum):
+    TODO = "todo"
+    PROGRESS = "progress"
+    COMPLETED = "completed"
+    ALL = "all"
+    
+    
 
 #towrite
 manager = TaskManager()
@@ -311,12 +311,13 @@ def main():
     modify_task_parser.add_argument("new_description", type=str)
     modify_task_parser.set_defaults(function=modify_task_command)
     
+    #update status by terminal
     def update_task_command(args):
-        manager.update_progress(args.id, parse_state(args.progress))
+        manager.update_progress(args.id, args.progress)
 
     update_task_parse = subparsers.add_parser("update")
     update_task_parse.add_argument("id", type=int)
-    update_task_parse.add_argument("progress", type=str, choices=TaskManager.STATUS)
+    update_task_parse.add_argument("progress", type= parse_state)
     update_task_parse.set_defaults(function=update_task_command)
     
      
