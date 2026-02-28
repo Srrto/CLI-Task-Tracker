@@ -102,10 +102,11 @@ class TaskManager:
                     "id" : self.__create_id(),
                     "Title": title,
                     "description" : description,
-                    "status" : State.TODO,
+                    "status" : State.TODO.name,
                     "created_At" : self.FORMAT_DATE,
                     "updated_At" : self.FORMAT_DATE
             }
+            
         self.tasks.append(new_task)
         self.save_tasks()
         print("Task saved")
@@ -132,7 +133,7 @@ class TaskManager:
         
         #If the value was not found, stops the function
         if not task:
-            print("No existe ninguna tarea con ese ID.\n")
+            print("Does not exist a task with that id.\n")
             return
         
         
@@ -316,11 +317,11 @@ def main():
     
     #update status by terminal
     def update_task_command(args):
-        manager.update_progress(args.id, args.progress)
+        manager.update_progress(args.id, args.status_task)
 
     update_task_parse = subparsers.add_parser("update")
     update_task_parse.add_argument("id", type=int)
-    update_task_parse.add_argument("status_task", type= parse_state)
+    update_task_parse.add_argument("status_task", type=parse_state)
     update_task_parse.set_defaults(function=update_task_command)
     
      
@@ -333,6 +334,3 @@ def main():
         
 if __name__ == "__main__":
     main()
-    
-    
-interactive_menu()
