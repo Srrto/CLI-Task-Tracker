@@ -57,8 +57,8 @@ def parse_state(status: str) -> State:
     
     try:
         return State(status.lower())
-    except KeyError:
-        raise argparse.ArgumentTypeError(f"{status} is not a valid state, valid options are {[vo.value for vo in State]}")
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{status}' is not a valid state, valid options are {[vo.value for vo in State]}")
 
 #class to encapsulate functions to manipulate json
 class TaskManager:
