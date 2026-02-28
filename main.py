@@ -63,6 +63,7 @@ def parse_state(status: str) -> State:
 #class to encapsulate functions to manipulate json
 class TaskManager:
     #Constants
+    
     FILE_NAME = "tasks.json"
     FORMAT_DATE = datetime.now().strftime('Dia: %d, Mes: %m, Año: %Y, A las %H:%M')
     
@@ -72,6 +73,14 @@ class TaskManager:
         self.tasks = self.load_tasks()
      
     #functions
+    
+    #validate if the list is empty
+    def __is_empty(self) -> bool:
+        if not self.tasks:
+            print("The list is empty. Try adding one task first")
+            return False
+        return True
+            
         
     #Load tasks
     def load_tasks(self):
@@ -122,6 +131,9 @@ class TaskManager:
     #delete task
     def delete_task(self, delete_id = None):
         
+        if not self.__is_empty():
+            return
+        
         if not delete_id:
             #show the tasks to know the valid options to delete
             self.show_tasks(State.ALL)
@@ -151,11 +163,18 @@ class TaskManager:
 
     #print tasks
     def print_tasks(self):
+        
+        if not self.__is_empty():
+            return
+        
         for t in self.tasks:
             print(f"{t}\n")
 
     #update tasks
     def modify_task(self, modify_id = None, title = None, description = None):
+        
+        if not self.__is_empty():
+            return
         
         #get title and description if not provided by terminal
         if not title and not description and not modify_id:
@@ -177,6 +196,9 @@ class TaskManager:
 
     #change progress of the task
     def update_progress(self, updating_id: int, progress: State):
+        
+        if not self.__is_empty():
+            return
         
         if not updating_id:   
             self.show_tasks(State.ALL)
@@ -203,6 +225,8 @@ class TaskManager:
     #Filter all tasks
     def filter_tasks(self, status_task: State):
         
+        if not self.__is_empty():
+            return
         
         if status_task == State.ALL:
             return self.tasks
@@ -215,7 +239,6 @@ class TaskManager:
         
         filtered_tasks = self.filter_tasks(status_task)
         if not filtered_tasks:
-            print("The list is empty. Nothing to show")
             return
         
         print(f"{'ID':<5} {'Title':<30} {'Status':<20}")
