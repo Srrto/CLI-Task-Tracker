@@ -198,7 +198,7 @@ class TaskManager:
         if status_task == State.ALL:
             return self.tasks
         else:
-            filtered_list = [t for t in self.tasks if t["status"] == status_task.value.upper()]
+            filtered_list = [t for t in self.tasks if t["status"] == status_task.name]
             return filtered_list
 
     #Show tasks
@@ -295,10 +295,10 @@ def main():
     
     #print tasks by terminal
     def show_tasks_command(args):
-        manager.show_tasks(args.filter)
+        manager.show_tasks(parse_state(args.filter))
         
     show_tasks_parser = subparsers.add_parser("show")
-    show_tasks_parser.add_argument("filter", type=int)
+    show_tasks_parser.add_argument("filter", type=str)
     show_tasks_parser.set_defaults(function=show_tasks_command)
     
     #modify task by terminal
