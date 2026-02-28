@@ -23,6 +23,13 @@ def get_string(prompt):
         
         return text_val
 
+#list of values to filter list
+class State(Enum):
+    TODO = "todo"
+    PROGRESS = "progress"
+    COMPLETED = "completed"
+    ALL = "all"
+
 #verifies the input is a valid integer
 def get_int(prompt_valid, min_val = None, max_val = None):
     
@@ -47,10 +54,11 @@ def get_int(prompt_valid, min_val = None, max_val = None):
             print("Please input a valid number\n")
     
 def parse_state(status: str) -> State:
+    
     try:
         return State(status.lower())
     except KeyError:
-        raise argparse.ArgumentTypeError("Invalid Status")
+        raise argparse.ArgumentTypeError(f"{status} is not a valid state, valid options are {[vo.value for vo in State]}")
 
 #class to encapsulate functions to manipulate json
 class TaskManager:
@@ -202,9 +210,9 @@ class TaskManager:
             return filtered_list
 
     #Show tasks
-    def show_tasks(self, status: State):
+    def show_tasks(self, status_task: State):
         
-        filtered_tasks = self.filter_tasks(status)
+        filtered_tasks = self.filter_tasks(status_task)
         if not filtered_tasks:
             print("The list is empty. Nothing to show")
             return
@@ -212,10 +220,10 @@ class TaskManager:
         print(f"{'ID':<5} {'Title':<30} {'Status':<20}")
         print("_" * 60, "\n" )
         
-        for tf in filtered_tasks:
-            print(f"{tf['id']:<5} {tf['Title']:<30} {tf['status']:<20} \n")
+        for ft in filtered_tasks:
+            print(f"{ft['id']:<5} {ft['Title']:<30} {ft['status']:<20} \n")
 
-    #middle-function to handle fuction with parameter
+    #middle-function to handle show_tasks with parameter
     def show_tasks_handler(self):
         task_state = get_string(
             "type a word to show filtered tasks\n"
@@ -226,12 +234,7 @@ class TaskManager:
         
         self.show_tasks(parse_state(task_state))
 
-#list of values to filter list
-class State(Enum):
-    TODO = "todo"
-    PROGRESS = "progress"
-    COMPLETED = "completed"
-    ALL = "all"
+
     
     
 
@@ -295,10 +298,10 @@ def main():
     
     #print tasks by terminal
     def show_tasks_command(args):
-        manager.show_tasks(parse_state(args.filter))
+        manager.show_tasks(args.filter)
         
     show_tasks_parser = subparsers.add_parser("show")
-    show_tasks_parser.add_argument("filter", type=str)
+    show_tasks_parser.add_argument("filter", type=parse_state)
     show_tasks_parser.set_defaults(function=show_tasks_command)
     
     #modify task by terminal
@@ -317,7 +320,7 @@ def main():
 
     update_task_parse = subparsers.add_parser("update")
     update_task_parse.add_argument("id", type=int)
-    update_task_parse.add_argument("progress", type= parse_state)
+    update_task_parse.add_argument("status_task", type= parse_state)
     update_task_parse.set_defaults(function=update_task_command)
     
      
